@@ -1,0 +1,501 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Exact Path – Chương trình Đối tác</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sổ tay đối tác — mục lục cố định bên trái, mỗi phần là một "slide" cuộn dọc, có bộ đếm trang ở thanh trên */
+:root {
+  /* ==== BẢNG MÀU — đổi theme ở đây ==== */
+  --ink: #0a1630;        /* nền xanh navy đậm */
+  --ink-2: rgba(22, 44, 92, .72);  /* mặt phẳng nổi (thẻ, ô) */
+  --ink-3: #1d3a75;      /* viền, ô nhấn */
+  --paper: #eef4ff;      /* chữ chính */
+  --muted: #a9b9d8;      /* chữ phụ */
+  --primary: #2f6bff;    /* xanh dương chính */
+  --accent: #4cc9ff;     /* xanh cyan điểm nhấn */
+  --mint: #6fd3a2;       /* tích cực */
+  --line: rgba(238, 244, 255, .12);
+  --grad: linear-gradient(135deg, #2f6bff 0%, #22b8f0 100%);          /* gradient nút / mục đang chọn */
+  --grad-text: linear-gradient(90deg, #4cc9ff 0%, #8fb0ff 100%);      /* gradient chữ nhấn */
+  --grad-bg: linear-gradient(160deg, #0a1630 0%, #0c2459 50%, #071d44 100%); /* nền trang */
+  --f-display: "Montserrat", "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body {
+  background: var(--grad-bg) fixed; background-color: var(--ink); color: var(--paper);
+  font: 16px/1.6 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Khung ---------- */
+.shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.side {
+  position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; overflow-y: auto;
+  background: linear-gradient(180deg, #081329 0%, #0b1f47 100%); border-right: 1px solid var(--line);
+  padding: 28px 18px 28px max(18px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+.brand { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+.brand b { font: 700 1.25rem/1.2 var(--f-display); letter-spacing: .01em; }
+.brand span { font-size: .78rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.nav { display: flex; flex-direction: column; gap: 22px; }
+.navgroup { display: flex; flex-direction: column; gap: 2px; }
+.navlabel {
+  font: 800 .78rem/1.3 var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+  padding: 0 10px 10px; margin-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.nav a {
+  display: flex; gap: 10px; align-items: baseline; text-decoration: none;
+  padding: 8px 10px; border-radius: 8px; color: var(--muted); font-size: .92rem;
+  transition: background .2s, color .2s;
+}
+.nav a i { font-style: normal; font-size: .75rem; opacity: .6; width: 18px; }
+.nav a:hover { background: var(--ink-2); color: var(--paper); }
+.nav a.on { background: var(--grad); color: #fff; box-shadow: 0 6px 18px rgba(47, 107, 255, .35); }
+.nav a.on i { opacity: .9; }
+.side .foot { margin-top: auto; font-size: .78rem; color: var(--muted); padding: 0 10px; }
+
+.main { min-width: 0; }
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding-block: 12px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px));
+  background: rgba(10, 22, 48, .82); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  font-size: .82rem; color: var(--muted);
+}
+.topbar .crumb b { color: var(--accent); font-weight: 600; }
+.pager { display: flex; align-items: center; gap: 8px; }
+.pager button {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--ink-2);
+  color: var(--paper); cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.pager button:hover { border-color: var(--accent); }
+.pager .count { min-width: 64px; text-align: center; color: var(--paper); font-weight: 600; }
+
+/* ---------- Slide ---------- */
+.slide {
+  padding-block: 72px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); scroll-margin-top: 56px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.4rem); line-height: 1.15; font-weight: 800; letter-spacing: -.015em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.3rem); line-height: 1.22; letter-spacing: -.01em; }
+h3 { font-size: 1.08rem; line-height: 1.35; font-weight: 600; }
+p { margin: 0; }
+.lead { font-size: 1.12rem; color: var(--muted); max-width: 64ch; }
+.head { display: flex; flex-direction: column; gap: 12px; }
+em.hl { font-style: normal; color: var(--accent); background: var(--grad-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.panel { background: var(--ink-2); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.panel p { color: var(--muted); font-size: .95rem; }
+.tag { align-self: flex-start; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--ink-3); color: var(--paper); }
+
+/* Cover */
+.cover { padding-block: 88px 72px; background:
+  radial-gradient(900px 420px at 85% 0%, rgba(47, 107, 255, .35), transparent 60%),
+  radial-gradient(700px 380px at 0% 100%, rgba(76, 201, 255, .14), transparent 60%); }
+.cover .lead { max-width: none; }
+.cover .stars { color: var(--accent); letter-spacing: .4em; font-size: .8rem; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.facts div { padding: 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.facts div:last-child { border-right: 0; }
+.facts b { font: 700 1.7rem/1.1 var(--f-display); }
+.facts span { font-size: .85rem; color: var(--muted); }
+.facts .red b { color: var(--accent); background: var(--grad-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.strike { text-decoration: line-through; text-decoration-color: var(--accent); opacity: .7; }
+
+/* Subjects */
+.subj { border-top: 3px solid var(--c); }
+.subj h3 { color: var(--c); }
+
+/* Adaptive flow */
+.flow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; align-items: start; }
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.step:last-child { border-bottom: 0; }
+.step .dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .9rem; background: var(--ink-3); }
+.step .up { background: var(--mint); color: var(--ink); }
+.step .down { background: var(--accent); color: var(--ink); }
+.step p { color: var(--muted); font-size: .95rem; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff; padding: 10px; }
+figcaption { font-size: .82rem; color: var(--muted); }
+
+/* Levels */
+.levels { display: flex; flex-direction: column; gap: 8px; }
+.lvl { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); }
+.lvl::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+.lvl b { font-weight: 600; }
+.lvl span { font-size: .82rem; color: var(--muted); }
+
+/* Product box */
+.product { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+.inc { display: flex; flex-direction: column; gap: 0; }
+.inc li { list-style: none; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.inc li:last-child { border-bottom: 0; }
+.inc ul { margin: 0; padding: 0; }
+.yes { color: var(--mint); font-weight: 700; }
+.no { color: var(--primary); font-weight: 700; }
+.note { border-left: 3px solid var(--primary); background: rgba(47, 107, 255, .12); }
+
+/* Price ladder */
+.ladder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: end; }
+.rung { border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); background: var(--ink-2); }
+.rung .v { font: 700 2.1rem/1 var(--f-display); }
+.rung .v small { font: 500 .9rem var(--f-body); color: var(--muted); }
+.rung .k { font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.rung p { font-size: .9rem; color: var(--muted); }
+.rung.list { min-height: 240px; }
+.rung.list .v { color: var(--muted); }
+.rung.retail { min-height: 200px; border-color: var(--accent); background: linear-gradient(160deg, rgba(47, 107, 255, .35), rgba(34, 184, 240, .12)); }
+.rung.retail .v { color: var(--accent); }
+
+/* Contact */
+.contact { background: radial-gradient(800px 360px at 100% 100%, rgba(47, 107, 255, .3), transparent 60%); }
+.cta { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.card { background: var(--paper); color: var(--ink); border-radius: 16px; padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.card .row { display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid rgba(10, 22, 48, .12); }
+.card .row:last-child { border-bottom: 0; padding-bottom: 0; }
+.card .row span { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: #5a6a8c; font-weight: 600; }
+.card .row b { font-size: 1.1rem; }
+.terms { display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: .95rem; padding-left: 20px; margin: 0; }
+
+/* Hiệu ứng rê chuột: viền sáng, vùng sáng vàng + lưới chấm chạy theo chuột (khung đứng yên) */
+.spot { position: relative; isolation: isolate; transition: box-shadow .35s, border-color .35s; }
+.spot::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  opacity: 0; transition: opacity .3s;
+  background:
+    radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), rgba(76, 201, 255, .2), transparent 65%),
+    radial-gradient(rgba(76, 201, 255, .45) 1px, transparent 1px) 0 0 / 18px 18px;
+  -webkit-mask-image: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), #000 10%, transparent 75%);
+  mask-image: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), #000 10%, transparent 75%);
+}
+figure.spot::after { z-index: 1; border-radius: 10px; }
+@media (hover: hover) {
+  .spot:hover { border-color: rgba(76, 201, 255, .65); box-shadow: 0 0 40px rgba(47, 107, 255, .25); }
+  .spot:hover::after { opacity: 1; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .g4, .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts div:nth-child(2) { border-right: 0; }
+  .facts div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .flow, .product, .cta, .g3, .ladder { grid-template-columns: minmax(0, 1fr); }
+  .rung.list, .rung.retail { min-height: 0; }
+}
+@media (max-width: 560px) {
+  .slide { padding-block: 52px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .topbar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .topbar .crumb span { display: none; }
+  .g2, .g4 { grid-template-columns: minmax(0, 1fr); }
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .facts div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .facts div:last-child { border-bottom: 0; }
+}
+</style>
+
+<div class="shell">
+  <aside class="side" aria-label="Mục lục">
+    <div class="brand"><b>Ivy Global School</b><span>Tài khoản Exact Path</span></div>
+    <nav class="nav" id="nav">
+      <div class="navgroup">
+        <div class="navlabel">Phần A · Sản phẩm</div>
+        <a href="#overview"><i>01</i>Tổng quan chương trình</a>
+        <a href="#exact-path"><i>02</i>Exact Path là gì</a>
+        <a href="#adaptive"><i>03</i>Bài test thích ứng</a>
+        <a href="#report"><i>04</i>Báo cáo kết quả</a>
+        <a href="#account"><i>05</i>Tài khoản gồm những gì</a>
+      </div>
+      <div class="navgroup">
+        <div class="navlabel">Phần B · Chính sách</div>
+        <a href="#pricing"><i>06</i>Chính sách giá</a>
+        <a href="#contact"><i>07</i>Liên hệ</a>
+      </div>
+    </nav>
+    <div class="foot">Tài khoản có hiệu lực đến 31/07/2027</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><span>Exact Path · </span><b id="crumb">Tổng quan chương trình</b></div>
+      <div class="pager">
+        <button type="button" id="prev" aria-label="Phần trước">‹</button>
+        <span class="count num" id="count">01 / 07</span>
+        <button type="button" id="next" aria-label="Phần sau">›</button>
+      </div>
+    </div>
+
+    <!-- 01 -->
+    <section class="slide cover" id="overview" data-title="Tổng quan chương trình">
+      <div class="wrap">
+        <div class="stars">★ ★ ★ ★ ★</div>
+        <div class="head">
+          <div class="eyebrow">Đề xuất hợp tác · Ivy Global School</div>
+          <h1>Chương trình tài khoản<br><em class="hl">Exact Path</em></h1>
+          <p class="lead">Tài khoản bài kiểm tra đánh giá năng lực Exact Path (Edmentum, Hoa Kỳ) cho học sinh <span style="white-space: nowrap">K-12</span>.</p>
+        </div>
+        <div class="facts">
+          <div><b class="num"><span class="strike" data-v="list">1.200.000đ</span></b><span>Giá niêm yết / tài khoản / năm</span></div>
+          <div class="red"><b class="num" data-v="suggest">650.000đ</b><span>Giá bán ưu đãi</span></div>
+          <div><b class="num">3 lượt</b><span>Kiểm tra Exact Path trên mỗi tài khoản</span></div>
+          <div><b class="num">31/07/2027</b><span>Hạn sử dụng tài khoản</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section class="slide" id="exact-path" data-title="Exact Path là gì">
+      <div class="wrap">
+        <div class="head">
+          <div class="eyebrow">Sản phẩm</div>
+          <h2>Bài kiểm tra đánh giá năng lực chuẩn hóa cho học sinh K-12</h2>
+          <p class="lead">Exact Path là bài kiểm tra thích ứng trên máy tính do Edmentum phát triển, đo lường mức độ sẵn sàng và sự tiến bộ của học sinh ở ba môn nền tảng. Mỗi học sinh nhận một bộ câu hỏi khác nhau, rút ra từ ngân hàng câu hỏi lớn và được điều chỉnh theo thời gian thực.</p>
+        </div>
+        <div class="grid g3">
+          <div class="panel subj" style="--c: #6fd3a2"><span class="tag">Môn 1</span><h3>Reading</h3><p>Đọc hiểu: khả năng đọc, nắm ý và suy luận từ văn bản tiếng Anh.</p></div>
+          <div class="panel subj" style="--c: #d9b45a"><span class="tag">Môn 2</span><h3>Language Arts</h3><p>Ngữ văn: ngữ pháp, từ vựng và cách diễn đạt.</p></div>
+          <div class="panel subj" style="--c: #ef7d86"><span class="tag">Môn 3</span><h3>Math</h3><p>Toán: tư duy logic và kỹ năng giải quyết vấn đề.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section class="slide" id="adaptive" data-title="Bài test thích ứng">
+      <div class="wrap">
+        <div class="head">
+          <div class="eyebrow">Cách bài kiểm tra hoạt động</div>
+          <h2>Câu hỏi tự điều chỉnh theo từng câu trả lời của học sinh</h2>
+        </div>
+        <div class="flow">
+          <div class="steps">
+            <div class="step"><div class="dot">1</div><div><h3>Bắt đầu theo khối lớp</h3><p>Hệ thống đưa ra câu hỏi phù hợp với khối lớp hoặc năng lực ước tính của học sinh.</p></div></div>
+            <div class="step"><div class="dot up">↑</div><div><h3>Trả lời đúng</h3><p>Câu hỏi tiếp theo khó hơn.</p></div></div>
+            <div class="step"><div class="dot down">↓</div><div><h3>Trả lời sai</h3><p>Câu hỏi tiếp theo dễ hơn.</p></div></div>
+            <div class="step"><div class="dot">✓</div><div><h3>Kết thúc khi đủ chính xác</h3><p>Mỗi câu trả lời thu hẹp khoảng sai số. Khi thang điểm đủ chính xác, bài kiểm tra tự dừng và xác định vùng phát triển gần của học sinh: các em đã nắm được gì và còn thiếu gì.</p></div></div>
+          </div>
+          <figure>
+            <img src="img/diagnostic-experience.png" alt="Biểu đồ quá trình làm bài Exact Path môn Toán: điểm ước tính dao động rồi hội tụ khi số câu hỏi tăng, kèm bảng điểm theo từng mảng kiến thức" loading="lazy">
+            <figcaption>Ví dụ thực tế một lượt kiểm tra môn Toán: 24 câu, 14 phút. Khoảng sai số thu hẹp dần, sau đó là bảng điểm theo từng mảng kiến thức.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section class="slide" id="report" data-title="Báo cáo kết quả">
+      <div class="wrap">
+        <div class="head">
+          <div class="eyebrow">Đầu ra cho phụ huynh</div>
+          <h2>Báo cáo kết quả chi tiết, so sánh với mặt bằng học sinh Mỹ</h2>
+          <p class="lead">Báo cáo cho thấy điểm mạnh, điểm yếu của học sinh, giúp đặt mục tiêu học tập phù hợp và là cơ sở để phụ huynh trao đổi với giáo viên.</p>
+        </div>
+        <div class="flow">
+          <figure>
+            <img src="img/report-overview.png" alt="Màn hình báo cáo Exact Path: điểm thang đo ba môn Toán, Đọc, Ngữ văn, thứ hạng phần trăm toàn quốc và biểu đồ tiến bộ qua các lần kiểm tra" loading="lazy">
+            <figcaption>Màn hình tổng quan: điểm từng môn trên thang 500–1500, thứ hạng phần trăm toàn quốc (NPR) và mức tiến bộ qua các lần kiểm tra.</figcaption>
+          </figure>
+          <div class="grid" style="gap: 14px">
+            <h3>4 mức xếp loại trình độ</h3>
+            <div class="levels">
+              <div class="lvl" style="--c: #6fd3a2"><b>Trình độ xuất sắc</b><span>Exceeds</span></div>
+              <div class="lvl" style="--c: #7fb2e5"><b>Đạt trình độ</b><span>Meets</span></div>
+              <div class="lvl" style="--c: #d9b45a"><b>Gần đạt trình độ</b><span>Approaching</span></div>
+              <div class="lvl" style="--c: #ef7d86"><b>Chưa đạt trình độ</b><span>Below</span></div>
+            </div>
+            <div class="panel"><h3>Đo được sự tiến bộ</h3><p>Học sinh K–8 tại Mỹ được phân nhóm theo kết quả Exact Path và khối lớp để xác định mức tăng trưởng trung bình. Với 3 lượt kiểm tra, phụ huynh có thể so điểm của con giữa các lần (ví dụ đầu năm, giữa năm, cuối năm) với mức tăng trưởng điển hình đó.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section class="slide" id="account" data-title="Tài khoản gồm những gì">
+      <div class="wrap">
+        <div class="head">
+          <div class="eyebrow">Phạm vi sản phẩm phân phối</div>
+          <h2>Mỗi tài khoản là 3 lượt kiểm tra Exact Path</h2>
+          <p class="lead">Đây là sản phẩm kiểm tra đánh giá năng lực. Đối tác vui lòng tư vấn đúng phạm vi này cho phụ huynh.</p>
+        </div>
+        <div class="product">
+          <div class="panel">
+            <ul class="inc">
+              <li><span class="yes">✓</span><div><b>3 lượt kiểm tra Exact Path</b><p>Bài kiểm tra thích ứng Reading, Language Arts và Math.</p></div></li>
+              <li><span class="yes">✓</span><div><b>Báo cáo kết quả sau mỗi lượt</b><p>Điểm thang đo, mức xếp loại trình độ, thứ hạng phần trăm và chi tiết theo mảng kiến thức.</p></div></li>
+              <li><span class="yes">✓</span><div><b>Sử dụng đến hết ngày 31/07/2027</b><p>Đủ thời gian để học sinh làm bài rải rác trong năm học 2026–2027.</p></div></li>
+              <li><span class="yes">✓</span><div><b>Tài liệu hướng dẫn phụ huynh</b><p>Bản hướng dẫn Exact Path bằng tiếng Việt để đối tác gửi kèm khi bán.</p></div></li>
+            </ul>
+          </div>
+          <div class="panel note">
+            <span class="tag" style="background: var(--primary)">Không bao gồm</span>
+            <h3>Không bán kèm Learning Path</h3>
+            <p>Tài khoản chỉ dùng để làm bài kiểm tra. Không bao gồm lộ trình học (Learning Path), bài học hay khóa học trực tuyến đi kèm.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="slide" id="pricing" data-title="Chính sách giá">
+      <div class="wrap">
+        <div class="head">
+          <div class="eyebrow">Chính sách giá</div>
+        </div>
+        <div class="ladder">
+          <div class="rung list"><span class="k">Giá niêm yết</span><div class="v num"><span data-v="list" data-raw>1.200.000</span><small>đ / năm</small></div><p>Giá niêm yết của Ivy Global School.</p></div>
+          <div class="rung retail"><span class="k">Giá bán ưu đãi</span><div class="v num"><span data-v="suggest" data-raw>650.000</span><small>đ</small></div><p>Tiết kiệm <span data-v="saving">550.000đ</span> (≈<span data-v="savingPct">46%</span>) so với giá niêm yết.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section class="slide contact" id="contact" data-title="Liên hệ">
+      <div class="wrap">
+        <div class="cta">
+          <div class="head">
+            <h2>Số lượng tài khoản có hạn.</h2>
+            <ul class="terms">
+              <li>Mỗi tài khoản: 3 lượt kiểm tra Exact Path, không kèm Learning Path.</li>
+              <li>Hạn sử dụng tài khoản: 31/07/2027.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="row"><span>Đơn vị</span><b>IGSC – Đối tác chiến lược của Ivy Global School</b></div>
+            <div class="row"><span>Người liên hệ</span><b>Thanh Hằng</b></div>
+            <div class="row"><span>Hotline / Zalo</span><b class="num">0988 164 099</b></div>
+            <div class="row"><span>Email</span><b>hang.ta@igsc.edu.vn</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =====================================================================
+   CẤU HÌNH — sửa giá và các gói ở đây, toàn trang tự cập nhật.
+   (Các chữ khác như tên trường, nội dung slide, liên hệ: sửa trực tiếp trong HTML ở trên.)
+   ===================================================================== */
+var CONFIG = {
+  listPrice: 1200000,     // Giá niêm yết / tài khoản
+  suggestPrice: 650000,   // Giá bán đề xuất cho khách
+  partnerPrice: 450000,   // Giá đối tác thanh toán về Trường
+  packages: [
+    { name: 'Gói Khởi động', qty: 50 },
+    { name: 'Gói Tăng tốc',  qty: 100, featured: true, ribbon: 'Phổ biến' },
+    { name: 'Gói Bứt phá',   qty: 300 }
+  ]
+};
+
+(function () {
+  var fmt = function (n) { return n.toLocaleString('vi-VN') + 'đ'; };
+  var C = CONFIG, P = C.packages;
+  var qtys = P.map(function (p) { return p.qty; });
+  var joinList = function (word) { return qtys.length < 2 ? String(qtys[0]) : qtys.slice(0, -1).join(', ') + ' ' + word + ' ' + qtys[qtys.length - 1]; };
+  var values = {
+    list: C.listPrice, suggest: C.suggestPrice, partner: C.partnerPrice,
+    saving: C.listPrice - C.suggestPrice, margin: C.suggestPrice - C.partnerPrice,
+    savingPct: Math.round((1 - C.suggestPrice / C.listPrice) * 100) + '%',
+    pkgList: joinList('và'), pkgListOr: joinList('hoặc')
+  };
+  document.querySelectorAll('[data-v]').forEach(function (el) {
+    var v = values[el.dataset.v];
+    if (v === undefined) return;
+    el.textContent = typeof v === 'number' ? (el.hasAttribute('data-raw') ? v.toLocaleString('vi-VN') : fmt(v)) : v;
+  });
+})();
+
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+  var countEl = document.getElementById('count');
+  var crumbEl = document.getElementById('crumb');
+  var current = 0;
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+
+  function setActive(i) {
+    current = i;
+    countEl.textContent = pad(i + 1) + ' / ' + pad(slides.length);
+    crumbEl.textContent = slides[i].dataset.title;
+    links.forEach(function (a, k) { a.classList.toggle('on', k === i); });
+  }
+  // Khi đang cuộn do bấm mục lục / nút, khóa việc dò vị trí để mục vừa chọn không bị đổi giữa chừng
+  var lockTimer = null, locked = false;
+  function unlockSoon(ms) {
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(function () { locked = false; }, ms);
+  }
+  function go(i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    setActive(i);
+    locked = true;
+    unlockSoon(1200);
+    slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try { history.replaceState(null, '', '#' + slides[i].id); } catch (e) {}
+  }
+
+  // Dò phần đang xem theo vị trí cuộn (IntersectionObserver bỏ qua rootMargin trong iframe nên không dùng)
+  function sync() {
+    if (locked) return;
+    var doc = document.documentElement;
+    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 4) { setActive(slides.length - 1); return; }
+    var line = window.innerHeight * 0.35, idx = 0;
+    slides.forEach(function (s, k) { if (s.getBoundingClientRect().top <= line) idx = k; });
+    if (idx !== current) setActive(idx);
+  }
+  window.addEventListener('scroll', function () {
+    if (locked) { unlockSoon(150); return; }
+    sync();
+  }, { passive: true });
+
+  links.forEach(function (a, k) {
+    a.addEventListener('click', function (e) { e.preventDefault(); go(k); });
+  });
+  document.getElementById('prev').addEventListener('click', function () { go(current - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(current + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.closest('input, button, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(current - 1); }
+  });
+
+  var start = slides.findIndex(function (s) { return '#' + s.id === location.hash; });
+  setActive(start < 0 ? 0 : start);
+  if (start > 0) slides[start].scrollIntoView();
+
+  // Hiệu ứng rê chuột: gắn cho các khung, cập nhật tọa độ vùng sáng theo vị trí chuột
+  document.querySelectorAll('.panel, .facts > div, .lvl, .rung, figure, .card').forEach(function (el) {
+    el.classList.add('spot');
+  });
+  document.addEventListener('pointermove', function (e) {
+    var el = e.target.closest && e.target.closest('.spot');
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, { passive: true });
+})();
+</script>
+
+</body></html>
